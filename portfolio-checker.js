@@ -28,35 +28,66 @@ async function getPortfolioProjects() {
 async function searchForLiveReport(projectName) {
   const cleanName = projectName.replace(/^\[(INT|EXT)\]\s*/i, '').trim();
 
-  const prompt = `Search the web for a publicly published version of this report or content piece: "${cleanName}".
+  // Step 1: Search the web and get a natural language response
+  const searchPrompt = `Search the web for a publicly published version of this report or content piece: "${cleanName}".
 Check the client's website, LinkedIn, blog posts, press releases, and social media.
-If you find a live public URL where this report is published or announced, return ONLY a JSON object like:
-{"found": true, "url": "https://...", "source": "hubspot.com"}
-If you cannot find it published anywhere, return ONLY:
-{"found": false}
-Do not include any other text.`;
+Describe what you find — include any URLs where this report appears to be live and publicly accessible.`;
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const searchRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 300,
+      max_tokens: 1000,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: searchPrompt }]
     })
   });
 
-  const data = await res.json();
-  const text = (data.content || [])
+  const searchData = await searchRes.json();
+  const searchText = (searchData.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('');
+
+  console.log(`   Search result: ${searchText.slice(0, 200)}...`);
+
+  // Step 2: Ask Claude to interpret the search results as structured JSON
+  const parseRes = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 200,
+      messages: [
+        {
+          role: 'user',
+          content: `Based on these web search results for "${cleanName}", determine if the report is publicly live.
+
+Search results:
+${searchText}
+
+Reply with ONLY a JSON object — no other text:
+If a live public URL was found: {"found": true, "url": "https://...", "source": "domain.com"}
+If not found: {"found": false}`
+        }
+      ]
+    })
+  });
+
+  const parseData = await parseRes.json();
+  const parseText = (parseData.content || [])
     .filter(b => b.type === 'text')
     .map(b => b.text)
     .join('');
 
   try {
-    const jsonMatch = text.match(/\{.*\}/s);
-    return jsonMatch ? JSON.parse(jsonMatch[0]) : { found: false };
+    const jsonMatch = parseText.match(/\{[\s\S]*\}/);
+    const result = jsonMatch ? JSON.parse(jsonMatch[0]) : { found: false };
+    console.log(`   Parsed result: ${JSON.stringify(result)}`);
+    return result;
   } catch {
+    console.log(`   Parse failed, raw: ${parseText}`);
     return { found: false };
   }
 }
