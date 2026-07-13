@@ -231,7 +231,7 @@ async function main() {
       console.log(`   Not live yet.`);
     }
 
-    await new Promise(r => setTimeout(r, 15000)); // 15s delay to respect rate limits
+    await new Promise(r => setTimeout(r, 65000)); // 15s delay to respect rate limits
   }
 
   saveState(state);
