@@ -33,11 +33,14 @@ async function searchForLiveReport(projectName) {
 Check the client's website, LinkedIn, blog posts, press releases, and social media.
 Describe what you find — include any URLs where this report appears to be live and publicly accessible.`;
 
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log(`   API key present: ${apiKey ? 'YES (length ' + apiKey.length + ')' : 'NO - MISSING'}`);
+
   const searchRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01'
     },
     body: JSON.stringify({
@@ -49,6 +52,7 @@ Describe what you find — include any URLs where this report appears to be live
   });
 
   const searchData = await searchRes.json();
+  console.log(`   API response status: ${searchRes.status}, error: ${searchData.error ? JSON.stringify(searchData.error) : 'none'}`);
   console.log(`   Raw API response type count: ${(searchData.content||[]).map(b=>b.type).join(', ')}`);
 
   // Web search results come back inside tool_result blocks, not text blocks
