@@ -35,7 +35,11 @@ Describe what you find — include any URLs where this report appears to be live
 
   const searchRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,
@@ -55,7 +59,11 @@ Describe what you find — include any URLs where this report appears to be live
   // Step 2: Ask Claude to interpret the search results as structured JSON
   const parseRes = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': process.env.ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01'
+    },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 200,
