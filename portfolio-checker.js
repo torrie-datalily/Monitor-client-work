@@ -49,12 +49,26 @@ Describe what you find — include any URLs where this report appears to be live
   });
 
   const searchData = await searchRes.json();
-  const searchText = (searchData.content || [])
-    .filter(b => b.type === 'text')
-    .map(b => b.text)
-    .join('');
+  console.log(`   Raw API response type count: ${(searchData.content||[]).map(b=>b.type).join(', ')}`);
 
-  console.log(`   Search result: ${searchText.slice(0, 200)}...`);
+  // Web search results come back inside tool_result blocks, not text blocks
+  let searchText = '';
+  for (const block of (searchData.content || [])) {
+    if (block.type === 'text') {
+      searchText += block.text + '\n';
+    } else if (block.type === 'tool_result') {
+      const inner = Array.isArray(block.content) ? block.content : [];
+      for (const b of inner) {
+        if (b.type === 'text') searchText += b.text + '\n';
+      }
+    }
+  }
+  // Fallback: dump raw JSON so we can see what's actually coming back
+  if (!searchText.trim()) {
+    searchText = JSON.stringify(searchData.content || []).slice(0, 500);
+  }
+
+  console.log(`   Search result: ${searchText.slice(0, 300)}...`);
 
   // Step 2: Ask Claude to interpret the search results as structured JSON
   const parseRes = await fetch('https://api.anthropic.com/v1/messages', {
