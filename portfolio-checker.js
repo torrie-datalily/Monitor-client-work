@@ -73,7 +73,7 @@ async function searchForLiveReport(projectName) {
   console.log(`   Search result: ${searchText.slice(0, 300)}...`);
 
   // Wait before second API call
-  await new Promise(r => setTimeout(r, 10000));
+  await new Promise(r => setTimeout(r, 100000));
 
   // Step 2: Ask Claude to interpret the search results as structured JSON
   const parseRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -231,7 +231,7 @@ async function main() {
       console.log(`   Not live yet.`);
     }
 
-    await new Promise(r => setTimeout(r, 65000)); // 15s delay to respect rate limits
+    await new Promise(r => setTimeout(r, 1000000)); // 15s delay to respect rate limits
   }
 
   saveState(state);
