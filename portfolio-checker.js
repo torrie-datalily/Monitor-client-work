@@ -29,9 +29,7 @@ async function searchForLiveReport(projectName) {
   const cleanName = projectName.replace(/^\[(INT|EXT)\]\s*/i, '').trim();
 
   // Step 1: Search the web and get a natural language response
-  const searchPrompt = `Search the web for a publicly published version of this report or content piece: "${cleanName}".
-Check the client's website, LinkedIn, blog posts, press releases, and social media.
-Describe what you find — include any URLs where this report appears to be live and publicly accessible.`;
+  const searchPrompt = `Search for "${cleanName}" published online. Find the live URL if it exists. Be brief.`;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   console.log(`   API key present: ${apiKey ? 'YES (length ' + apiKey.length + ')' : 'NO - MISSING'}`);
@@ -45,7 +43,7 @@ Describe what you find — include any URLs where this report appears to be live
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 500,
       tools: [{ type: 'web_search_20250305', name: 'web_search' }],
       messages: [{ role: 'user', content: searchPrompt }]
     })
@@ -73,6 +71,9 @@ Describe what you find — include any URLs where this report appears to be live
   }
 
   console.log(`   Search result: ${searchText.slice(0, 300)}...`);
+
+  // Wait before second API call
+  await new Promise(r => setTimeout(r, 10000));
 
   // Step 2: Ask Claude to interpret the search results as structured JSON
   const parseRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -230,7 +231,7 @@ async function main() {
       console.log(`   Not live yet.`);
     }
 
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 15000)); // 15s delay to respect rate limits
   }
 
   saveState(state);
